@@ -106,11 +106,31 @@ async function run() {
             const orders = await orderCollection.find(query).toArray();
             res.send(orders);
         })
+        //Get Orders by customer phone
+        app.get('/order_by_phone/:phone', async (req, res) => {
+            const phone = req.params.phone;
+            const query = { phone: phone };
+            const orders = await orderCollection.find(query).toArray();
+            res.send(orders);
+        })
         //Post an order
         app.post('/orders', async (req, res) => {
             const newOrder = req.body;
             const result = await orderCollection.insertOne(newOrder);
             res.send(result);
+        })
+        //Edit Order State
+        app.patch('/order_state/:id', async (req, res) => {
+            const id = req.params.id;
+            const query = { _id: new ObjectId(id) };
+            const state = req.body.state;
+            const updatedDoc = {
+                $set: {
+                    status: state
+                }
+            }
+            const result = await orderCollection.updateOne(query, updatedDoc);
+            res.send(result)
         })
 
 
