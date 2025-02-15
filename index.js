@@ -140,11 +140,23 @@ async function run() {
             const customers = await customerCollection.find().toArray();
             res.send(customers);
         })
-        // Post a customer
+        // Post a customer by email
         app.put('/customers/:email', async (req, res) => {
             const email = req.params.email;
             const newCustomer = req.body;
             const filter = { email: email };
+            const options = { upsert: true };
+            const updateDoc = {
+                $set: newCustomer,
+            };
+            const result = await customerCollection.updateOne(filter, updateDoc, options);
+            res.send(result);
+        })
+        // Post a customer by phone
+        app.put('/customers/:phone', async (req, res) => {
+            const phone = req.params.phone;
+            const newCustomer = req.body;
+            const filter = { phone: phone };
             const options = { upsert: true };
             const updateDoc = {
                 $set: newCustomer,
