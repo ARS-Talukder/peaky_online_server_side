@@ -3,6 +3,10 @@ const cors = require('cors');
 const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
 require('dotenv').config();
 
+const multer = require('multer');
+const path = require('path');
+const fs = require('fs');
+
 const app = express();
 const port = process.env.PORT || 5000;
 
@@ -27,6 +31,49 @@ async function run() {
         const categoryCollection = client.db("peaky_online").collection("categories");
         const orderCollection = client.db("peaky_online").collection("orders");
         const customerCollection = client.db("peaky_online").collection("customers");
+
+        // Configure the storage engine for multer
+        const storage = multer.diskStorage({
+            destination: (req, file, cb) => {
+                const uploadPath = path.join(__dirname, 'uploads'); // Path to store images
+                // Ensure the 'uploads' folder exists
+                if (!fs.existsSync(uploadPath)) {
+                    fs.mkdirSync(uploadPath);
+                }
+                cb(null, uploadPath); // Save in 'uploads' folder
+            },
+            filename: (req, file, cb) => {
+                cb(null, Date.now() + path.extname(file.originalname)); // Use a timestamp as the filename
+            },
+        });
+
+        const upload = multer({ storage });
+
+        // Create an endpoint for uploading images
+        app.post('/upload', upload.single('image'), (req, res) => {
+            if (!req.file) {
+                return res.status(400).json({ error: "No file uploaded" });
+            }
+            res.json({ filePath: `/uploads/${req.file.filename}` });
+        });
+
+        // Set up static folder to serve images
+        app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+
+        // Create an endpoint to delete an image
+        app.delete('/delete', async (req, res) => {
+            const { imageUrl } = req.body;
+            const imagePath = `./uploads/${imageUrl.split('/').pop()}`;
+
+            try {
+                fs.unlinkSync(imagePath); // Delete file
+                res.json({ success: true, message: "Image deleted successfully" });
+            } catch (err) {
+                res.status(500).json({ success: false, message: "Failed to delete image" });
+            }
+        });
+
+
 
         // all the APIs are written here
         //Get all Products
