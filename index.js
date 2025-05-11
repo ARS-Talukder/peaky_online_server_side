@@ -166,6 +166,13 @@ async function run() {
             const result = await orderCollection.insertOne(newOrder);
             res.send(result);
         })
+        app.delete('/order-delete/:id', async (req, res) => {
+            const id = req.params.id;
+            const query = { _id: new ObjectId(id) };
+            const result = await orderCollection.deleteOne(query);
+            res.send(result);
+
+        })
         //Edit Order State
         app.patch('/order_state/:id', async (req, res) => {
             const id = req.params.id;
