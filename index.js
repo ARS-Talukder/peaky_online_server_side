@@ -31,6 +31,7 @@ async function run() {
         const categoryCollection = client.db("peaky_online").collection("categories");
         const orderCollection = client.db("peaky_online").collection("orders");
         const customerCollection = client.db("peaky_online").collection("customers");
+        const bannerCollection = client.db("peaky_online").collection("banner");
 
         // Configure the storage engine for multer
         const storage = multer.diskStorage({
@@ -139,6 +140,39 @@ async function run() {
 
         })
 
+
+        //Get all Banner Images 
+        app.get('/banner', async (req, res) => {
+            const banner = await bannerCollection.find().toArray();
+            res.send(banner);
+        })
+        // Post all banner images
+        app.post('/banner', async (req, res) => {
+            const newData = req.body;
+
+            try {
+                await bannerCollection.deleteMany({}); // delete old banners
+
+                let inserted = { acknowledged: true, insertedCount: 0 };
+
+                if (newData && newData.length > 0) {
+                    inserted = await bannerCollection.insertMany(newData); // only insert if non-empty
+                }
+
+                res.send({ message: "Banner collection replaced", result: inserted });
+            } catch (err) {
+                console.error("Error replacing banner collection:", err);
+                res.status(500).send({ error: "Internal server error" });
+            }
+        });
+        //Delete Category
+        app.delete('/banner-delete/:id', async (req, res) => {
+            const id = req.params.id;
+            const query = { _id: id };
+            const result = await bannerCollection.deleteOne(query);
+            res.send(result);
+
+        })
 
 
         //Get all Orders
