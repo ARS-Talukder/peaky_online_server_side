@@ -82,20 +82,27 @@ async function run() {
             const products = await productCollection.find().toArray();
             res.send(products);
         })
-        //Edit Specific Product
-        app.patch('/product/:id', async (req, res) => {
+        //Get specific Category
+        app.get('/product/:id', async (req, res) => {
             const id = req.params.id;
             const query = { _id: new ObjectId(id) };
-            const querySent = req.body.query;
-            const inputValue = req.body.inputValue;
-            const updatedDoc = {
-                $set: {
-                    [querySent]: inputValue
-                }
-            }
-            const result = await productCollection.updateOne(query, updatedDoc);
-            res.send(result)
+            const product = await productCollection.findOne(query);
+            res.send(product);
         })
+        // //Edit Specific Product
+        // app.patch('/product/:id', async (req, res) => {
+        //     const id = req.params.id;
+        //     const query = { _id: new ObjectId(id) };
+        //     const querySent = req.body.query;
+        //     const inputValue = req.body.inputValue;
+        //     const updatedDoc = {
+        //         $set: {
+        //             [querySent]: inputValue
+        //         }
+        //     }
+        //     const result = await productCollection.updateOne(query, updatedDoc);
+        //     res.send(result)
+        // })
         //Delete Product
         app.delete('/product-delete/:id', async (req, res) => {
             const id = req.params.id;
@@ -243,6 +250,13 @@ async function run() {
             };
             const result = await customerCollection.updateOne(filter, updateDoc, options);
             res.send(result);
+        })
+        app.delete('/customer-delete/:id', async (req, res) => {
+            const id = req.params.id;
+            const query = { _id: new ObjectId(id) };
+            const result = await customerCollection.deleteOne(query);
+            res.send(result);
+
         })
         //Update Customer Mobile
         app.patch('/customer-mobile/:email', async (req, res) => {
