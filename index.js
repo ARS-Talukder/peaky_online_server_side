@@ -165,14 +165,6 @@ async function run() {
                 res.status(500).send({ error: "Internal server error" });
             }
         });
-        //Delete Category
-        app.delete('/banner-delete/:id', async (req, res) => {
-            const id = req.params.id;
-            const query = { _id: id };
-            const result = await bannerCollection.deleteOne(query);
-            res.send(result);
-
-        })
 
 
         //Get all Orders
