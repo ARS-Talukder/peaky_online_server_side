@@ -82,27 +82,13 @@ async function run() {
             const products = await productCollection.find().toArray();
             res.send(products);
         })
-        //Get specific Category
+        //Get specific product
         app.get('/product/:id', async (req, res) => {
             const id = req.params.id;
             const query = { _id: new ObjectId(id) };
             const product = await productCollection.findOne(query);
             res.send(product);
         })
-        // //Edit Specific Product
-        // app.patch('/product/:id', async (req, res) => {
-        //     const id = req.params.id;
-        //     const query = { _id: new ObjectId(id) };
-        //     const querySent = req.body.query;
-        //     const inputValue = req.body.inputValue;
-        //     const updatedDoc = {
-        //         $set: {
-        //             [querySent]: inputValue
-        //         }
-        //     }
-        //     const result = await productCollection.updateOne(query, updatedDoc);
-        //     res.send(result)
-        // })
         //Delete Product
         app.delete('/product-delete/:id', async (req, res) => {
             const id = req.params.id;
@@ -117,6 +103,41 @@ async function run() {
             const result = await productCollection.insertOne(newProduct);
             res.send(result);
         })
+        //Edit Product image
+        app.patch('/product_image/:id', async (req, res) => {
+            const id = req.params.id;
+            const query = { _id: new ObjectId(id) };
+            const images = req.body;
+            const updatedDoc = {
+                $set: {
+                    images: images
+                }
+            }
+            const result = await productCollection.updateOne(query, updatedDoc);
+            res.send(result)
+        })
+        //Edit product
+        app.patch('/edit_product/:id', async (req, res) => {
+            const id = req.params.id;
+            const query = { _id: new ObjectId(id) };
+            const { name, category, price, discount, shippingCharge, subtitle, whyBest, images, description } = req.body;
+            const updatedDoc = {
+                $set: {
+                    name: name,
+                    category: category,
+                    price: price,
+                    discount: discount,
+                    shippingCharge: shippingCharge,
+                    subtitle: subtitle,
+                    whyBest: whyBest,
+                    images: images,
+                    description: description
+                }
+            }
+            const result = await productCollection.updateOne(query, updatedDoc);
+            res.send(result)
+        })
+
 
 
 
@@ -131,6 +152,40 @@ async function run() {
             const query = { category: name };
             const products = await productCollection.find(query).toArray();
             res.send(products);
+        })
+        //Get specific category
+        app.get('/category_by_id/:id', async (req, res) => {
+            const id = req.params.id;
+            const query = { _id: new ObjectId(id) };
+            const category = await categoryCollection.findOne(query);
+            res.send(category);
+        })
+        //Edit Category image
+        app.patch('/category_image/:id', async (req, res) => {
+            const id = req.params.id;
+            const query = { _id: new ObjectId(id) };
+            const img = req.body.img;
+            const updatedDoc = {
+                $set: {
+                    img: img
+                }
+            }
+            const result = await categoryCollection.updateOne(query, updatedDoc);
+            res.send(result)
+        })
+        //Edit Category
+        app.patch('/edit_category/:id', async (req, res) => {
+            const id = req.params.id;
+            const query = { _id: new ObjectId(id) };
+            const { name, img } = req.body;
+            const updatedDoc = {
+                $set: {
+                    name: name,
+                    img: img
+                }
+            }
+            const result = await categoryCollection.updateOne(query, updatedDoc);
+            res.send(result)
         })
         //Add Category
         app.post('/categories', async (req, res) => {
@@ -295,13 +350,6 @@ async function run() {
             res.send({ admin: isAdmin })
         })
 
-
-        // app.delete('/product/:id', async (req, res) => {
-        //     const id = req.params.id;
-        //     const query = { _id: new ObjectId(id) };
-        //     const result = await productCollection.deleteOne(query);
-        //     res.send(result);
-        // })
 
     }
     finally {
