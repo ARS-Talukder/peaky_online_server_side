@@ -264,12 +264,11 @@ async function run() {
         //Edit Order State
         app.patch('/order_state/:id', async (req, res) => {
             const id = req.params.id;
+            const { state, steps } = req.body;
             const query = { _id: new ObjectId(id) };
-            const state = req.body.state;
             const updatedDoc = {
-                $set: {
-                    status: state
-                }
+                $set: { status: state },
+                $push: { orderSteps: { $each: steps } }
             }
             const result = await orderCollection.updateOne(query, updatedDoc);
             res.send(result)
