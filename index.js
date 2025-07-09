@@ -29,6 +29,7 @@ async function run() {
         await client.connect();
         const productCollection = client.db("peaky_online").collection("products");
         const categoryCollection = client.db("peaky_online").collection("categories");
+        const SpecialCategoryCollection = client.db("peaky_online").collection("specials");
         const orderCollection = client.db("peaky_online").collection("orders");
         const customerCollection = client.db("peaky_online").collection("customers");
         const bannerCollection = client.db("peaky_online").collection("banner");
@@ -203,6 +204,19 @@ async function run() {
         })
 
 
+        //Get all Special Categories
+        app.get('/special_categories', async (req, res) => {
+            const specialCategories = await SpecialCategoryCollection.find().toArray();
+            res.send(specialCategories);
+        })
+        //Add Special Category
+        app.post('/special_categories', async (req, res) => {
+            const newSpecialCategory = req.body;
+            const result = await SpecialCategoryCollection.insertOne(newSpecialCategory);
+            res.send(result);
+        })
+
+
         //Get all Banner Images 
         app.get('/banner', async (req, res) => {
             const banner = await bannerCollection.find().toArray();
@@ -276,6 +290,7 @@ async function run() {
 
 
 
+
         //Get all Customers
         app.get('/customers', async (req, res) => {
             const customers = await customerCollection.find().toArray();
@@ -338,6 +353,228 @@ async function run() {
             const result = await customerCollection.updateOne(query, updatedDoc);
             res.send(result)
         })
+
+        // Total Sales
+        app.get('/api/sales/total', async (req, res) => {
+            try {
+                const result = await orderCollection.aggregate([
+                    {
+                        $match: { status: "delivered" }
+                    },
+                    {
+                        $group: {
+                            _id: null,
+                            totalSales: { $sum: "$total" },
+                            totalOrders: { $sum: 1 }
+                        }
+                    }
+                ]).toArray();
+
+                res.send(result[0] || { totalSales: 0, totalOrders: 0 });
+            } catch (err) {
+                console.error("Error in /api/sales/total:", err);
+                res.status(500).send({ message: "Internal error", error: err });
+            }
+        });
+
+        // Monthly Sales Summary
+        app.get('/api/sales/monthly-summary', async (req, res) => {
+            try {
+                const result = await orderCollection.aggregate([
+                    {
+                        $match: {
+                            status: "delivered" // Optional filter by order status
+                        }
+                    },
+                    {
+                        $group: {
+                            _id: {
+                                $dateToString: { format: "%Y-%m", date: { $toDate: "$date" } }
+                            },
+                            totalSales: { $sum: "$total" },
+                            count: { $sum: 1 }
+                        }
+                    },
+                    {
+                        $sort: { _id: 1 }
+                    }
+                ]).toArray();
+
+                res.send(result);
+            } catch (error) {
+                console.error("Monthly summary error:", error);
+                res.status(500).send({ message: "Internal Server Error", error });
+            }
+        });
+
+        // Last month daily Sales
+        app.get('/api/sales/last-month', async (req, res) => {
+            try {
+                const now = new Date();
+                const firstDayLastMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+                const lastDayLastMonth = new Date(now.getFullYear(), now.getMonth(), 0, 23, 59, 59);
+
+                const result = await orderCollection.aggregate([
+                    {
+                        $match: {
+                            status: "delivered",
+                            $expr: {
+                                $and: [
+                                    { $gte: [{ $toDate: "$date" }, firstDayLastMonth] },
+                                    { $lte: [{ $toDate: "$date" }, lastDayLastMonth] }
+                                ]
+                            }
+                        }
+                    },
+                    {
+                        $group: {
+                            _id: {
+                                $dateToString: { format: "%d-%b", date: { $toDate: "$date" } }
+                            },
+                            totalSales: { $sum: "$total" },
+                            count: { $sum: 1 }
+                        }
+                    },
+                    {
+                        $sort: { _id: 1 }
+                    }
+                ]).toArray();
+
+                res.send(result);
+            } catch (error) {
+                console.error("Error in /api/sales/last-month:", error);
+                res.status(500).send({ message: "Internal Server Error", error });
+            }
+        });
+
+        // This month daily sales
+        app.get('/api/sales/this-month', async (req, res) => {
+            try {
+                const now = new Date();
+                const firstDayThisMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+                const lastDayThisMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59);
+
+                const result = await orderCollection.aggregate([
+                    {
+                        $match: {
+                            status: "delivered",
+                            $expr: {
+                                $and: [
+                                    { $gte: [{ $toDate: "$date" }, firstDayThisMonth] },
+                                    { $lte: [{ $toDate: "$date" }, lastDayThisMonth] }
+                                ]
+                            }
+                        }
+                    },
+                    {
+                        $group: {
+                            _id: {
+                                $dateToString: { format: "%d-%b", date: { $toDate: "$date" } }
+                            },
+                            totalSales: { $sum: "$total" },
+                            count: { $sum: 1 }
+                        }
+                    },
+                    { $sort: { _id: 1 } }
+                ]).toArray();
+
+                res.send(result);
+            } catch (error) {
+                console.error("Error in /api/sales/this-month:", error);
+                res.status(500).send({ message: "Internal Server Error", error });
+            }
+        });
+
+        // Last 7 days Daily Sales
+        app.get('/api/sales/last-7-days', async (req, res) => {
+            try {
+                const now = new Date();
+                const sevenDaysAgo = new Date(now);
+                sevenDaysAgo.setDate(now.getDate() - 6); // last 7 days including today
+
+                const result = await orderCollection.aggregate([
+                    {
+                        $addFields: {
+                            convertedDate: {
+                                $dateFromString: {
+                                    dateString: "$date",
+                                    onError: null,
+                                    onNull: null
+                                }
+                            }
+                        }
+                    },
+                    {
+                        $match: {
+                            status: "delivered",
+                            convertedDate: { $ne: null, $gte: sevenDaysAgo, $lte: now }
+                        }
+                    },
+                    {
+                        $group: {
+                            _id: {
+                                $dateToString: { format: "%d-%b", date: "$convertedDate" }
+                            },
+                            totalSales: { $sum: "$total" },
+                            count: { $sum: 1 }
+                        }
+                    },
+                    {
+                        $sort: { _id: 1 }
+                    }
+                ]).toArray();
+
+                res.send(result);
+            } catch (err) {
+                console.error("Error in /api/sales/last-7-days:", err);
+                res.status(500).send({ message: "Internal error", error: err });
+            }
+        });
+
+        // Today Sales
+        app.get('/api/sales/today', async (req, res) => {
+            try {
+                const now = new Date();
+                const startOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0);
+                const endOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59);
+
+                const result = await orderCollection.aggregate([
+                    {
+                        $addFields: {
+                            convertedDate: {
+                                $dateFromString: {
+                                    dateString: "$date",
+                                    onError: null,
+                                    onNull: null
+                                }
+                            }
+                        }
+                    },
+                    {
+                        $match: {
+                            status: "delivered",
+                            convertedDate: {
+                                $ne: null,
+                                $gte: startOfDay,
+                                $lte: endOfDay
+                            }
+                        }
+                    },
+                    {
+                        $group: {
+                            _id: null,
+                            totalSales: { $sum: "$total" },
+                            count: { $sum: 1 }
+                        }
+                    }
+                ]).toArray();
+
+                res.send(result[0] || { totalSales: 0, count: 0 });
+            } catch (err) {
+                console.error("Error in /api/sales/today:", err);
+                res.status(500).send({ message: "Internal error", error: err });
+            }
+        });
 
 
 
