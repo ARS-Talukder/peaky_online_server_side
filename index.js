@@ -215,6 +215,52 @@ async function run() {
             const result = await SpecialCategoryCollection.insertOne(newSpecialCategory);
             res.send(result);
         })
+        //Get specific Special category
+        app.get('/special_category/:id', async (req, res) => {
+            const id = req.params.id;
+            const query = { _id: new ObjectId(id) };
+            const category = await SpecialCategoryCollection.findOne(query);
+            res.send(category);
+        })
+        // DELETE Special Category
+        app.delete('/special_category_delete/:id', async (req, res) => {
+            const id = req.params.id;
+            const query = { _id: new ObjectId(id) };
+
+            try {
+                const result = await SpecialCategoryCollection.deleteOne(query);
+                if (result.deletedCount === 1) {
+                    res.send({ success: true, message: "Category deleted successfully" });
+                } else {
+                    res.status(404).send({ success: false, message: "Category not found" });
+                }
+            } catch (error) {
+                console.error(error);
+                res.status(500).send({ success: false, message: "Internal server error" });
+            }
+        });
+        // Update Special Category - Add Product
+        app.patch('/special_category/:id/add-product', async (req, res) => {
+            const id = req.params.id;
+            const product = req.body; // product object from frontend
+            const filter = { _id: new ObjectId(id) };
+            const updateDoc = {
+                $push: { products: product }
+            };
+            const result = await SpecialCategoryCollection.updateOne(filter, updateDoc);
+            res.send(result);
+        });
+        // Remove product from Special Category
+        app.patch('/special_category/:id/remove-product', async (req, res) => {
+            const id = req.params.id;
+            const productId = req.body._id; // frontend will send product._id
+            const filter = { _id: new ObjectId(id) };
+            const updateDoc = {
+                $pull: { products: { _id: productId } }
+            };
+            const result = await SpecialCategoryCollection.updateOne(filter, updateDoc);
+            res.send(result);
+        });
 
 
         //Get all Banner Images 
