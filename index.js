@@ -33,6 +33,7 @@ async function run() {
         const orderCollection = client.db("peaky_online").collection("orders");
         const customerCollection = client.db("peaky_online").collection("customers");
         const bannerCollection = client.db("peaky_online").collection("banner");
+        const couponCollection = client.db("peaky_online").collection("coupon");
 
         // Configure the storage engine for multer
         const storage = multer.diskStorage({
@@ -121,13 +122,14 @@ async function run() {
         app.patch('/edit_product/:id', async (req, res) => {
             const id = req.params.id;
             const query = { _id: new ObjectId(id) };
-            const { name, category, price, discount, shippingCharge, subtitle, whyBest, images, description } = req.body;
+            const { name, category, price, discount, discount_price, shippingCharge, subtitle, whyBest, images, description } = req.body;
             const updatedDoc = {
                 $set: {
                     name: name,
                     category: category,
                     price: price,
                     discount: discount,
+                    discount_price: discount_price,
                     shippingCharge: shippingCharge,
                     subtitle: subtitle,
                     whyBest: whyBest,
@@ -250,6 +252,17 @@ async function run() {
             const result = await SpecialCategoryCollection.updateOne(filter, updateDoc);
             res.send(result);
         });
+        // Update Special Category Timer
+        app.patch('/special_category/:id/update-timer', async (req, res) => {
+            const id = req.params.id;
+            const { startTime, endTime } = req.body;
+            const filter = { _id: new ObjectId(id) };
+            const updateDoc = {
+                $set: { startTime, endTime }
+            };
+            const result = await SpecialCategoryCollection.updateOne(filter, updateDoc);
+            res.send(result);
+        });
         // Remove product from Special Category
         app.patch('/special_category/:id/remove-product', async (req, res) => {
             const id = req.params.id;
@@ -332,6 +345,27 @@ async function run() {
             }
             const result = await orderCollection.updateOne(query, updatedDoc);
             res.send(result)
+        })
+
+
+        //Get all coupons
+        app.get('/coupons', async (req, res) => {
+            const coupons = await couponCollection.find().toArray();
+            res.send(coupons);
+        })
+        //Post a coupon
+        app.post('/coupon', async (req, res) => {
+            const newCoupon = req.body;
+            const result = await couponCollection.insertOne(newCoupon);
+            res.send(result);
+        })
+        //Delete Coupon
+        app.delete('/coupon/:id', async (req, res) => {
+            const id = req.params.id;
+            const query = { _id: new ObjectId(id) };
+            const result = await couponCollection.deleteOne(query);
+            res.send(result);
+
         })
 
 
