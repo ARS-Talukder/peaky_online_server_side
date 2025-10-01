@@ -30,6 +30,7 @@ async function run() {
         const productCollection = client.db("peaky_online").collection("products");
         const categoryCollection = client.db("peaky_online").collection("categories");
         const SpecialCategoryCollection = client.db("peaky_online").collection("specials");
+        const IconicCategoryCollection = client.db("peaky_online").collection("iconic");
         const orderCollection = client.db("peaky_online").collection("orders");
         const customerCollection = client.db("peaky_online").collection("customers");
         const bannerCollection = client.db("peaky_online").collection("banner");
@@ -272,6 +273,65 @@ async function run() {
                 $pull: { products: { _id: productId } }
             };
             const result = await SpecialCategoryCollection.updateOne(filter, updateDoc);
+            res.send(result);
+        });
+
+
+        //Get all Iconic Categories
+        app.get('/iconic_categories', async (req, res) => {
+            const iconic_categories = await IconicCategoryCollection.find().toArray();
+            res.send(iconic_categories);
+        })
+        //Get specific Iconic category
+        app.get('/iconic_category/:id', async (req, res) => {
+            const id = req.params.id;
+            const query = { _id: new ObjectId(id) };
+            const category = await IconicCategoryCollection.findOne(query);
+            res.send(category);
+        })
+        //Add Iconic Category
+        app.post('/iconic_categories', async (req, res) => {
+            const newIconicCategory = req.body;
+            const result = await IconicCategoryCollection.insertOne(newIconicCategory);
+            res.send(result);
+        })
+        // DELETE Iconic Category
+        app.delete('/iconic_category_delete/:id', async (req, res) => {
+            const id = req.params.id;
+            const query = { _id: new ObjectId(id) };
+
+            try {
+                const result = await IconicCategoryCollection.deleteOne(query);
+                if (result.deletedCount === 1) {
+                    res.send({ success: true, message: "Category deleted successfully" });
+                } else {
+                    res.status(404).send({ success: false, message: "Category not found" });
+                }
+            } catch (error) {
+                console.error(error);
+                res.status(500).send({ success: false, message: "Internal server error" });
+            }
+        });
+        // Update Iconic Category - Add Product
+        app.patch('/iconic_category/:id/add-product', async (req, res) => {
+            const id = req.params.id;
+            const product = req.body; // product object from frontend
+            const filter = { _id: new ObjectId(id) };
+            const updateDoc = {
+                $push: { products: product }
+            };
+            const result = await IconicCategoryCollection.updateOne(filter, updateDoc);
+            res.send(result);
+        });
+        // Remove product from Iconic Category
+        app.patch('/iconic_category/:id/remove-product', async (req, res) => {
+            const id = req.params.id;
+            const productId = req.body._id; // frontend will send product._id
+            const filter = { _id: new ObjectId(id) };
+            const updateDoc = {
+                $pull: { products: { _id: productId } }
+            };
+            const result = await IconicCategoryCollection.updateOne(filter, updateDoc);
             res.send(result);
         });
 
